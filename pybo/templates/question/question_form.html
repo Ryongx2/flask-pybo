@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- 질문 등록 -->
+<div class="container">
+  <h5 class="my-3 border-bottom pb-2">질문등록</h5>
+  <form method="post" class="my-3">
+    <!-- CSRF 토큰 오류 처리 -->
+    {{ form.csrf_token }}
+
+    <!-- 오류표시 Start -->
+    {% if form.errors %}
+    <div class="alert alert-danger" role="alert">
+      {% for field, errors in form.errors.items() %}
+      <strong>{{ form[field].label }}</strong>
+      <ul>
+        {% for error in errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <!--오류표시 End -->
+
+    <div class="form-group">
+
+      <div class="mb-3">
+        <label for="subject">제목</label>
+        <input type="text" class="form-control" name="subject" id="subject" value="{{ form.subject.data or '' }}">
+        <!-- subject 필드의 value값으로 {{ form.subject.data or '' }}를 입력하면 이미 전송한 데이터가 다시 설정됨.
+              or ''은 "현재 템플릿이 GET 방식으로 요청되는 경우 기존 입력값이 없으므로(None으로 출력) 이를 방지하기 위해서" 사용.
+              즉, form.subject.data에 값이 없을 때 None이 아니라 ''이 출력됨. -->
+      </div>
+      <div class="mb-3">
+        <label for="content">내용</label>
+        <textarea class="form-control" name="content" id="content" rows="10">{{ form.content.data or '' }}</textarea>
+      </div>
+
+      <!--
+      {{ form.subject.label }}  라벨
+      {{ form.subject(class="form-control") }}      입력폼
+
+      {{ form.content.label }}
+      {{ form.content(class="form-control") }}
+      -->
+
+      <button type="submit" class="btn btn-primary">저장하기</button>
+
+    </div>
+
+  </form>
+</div>
+{% endblock %}

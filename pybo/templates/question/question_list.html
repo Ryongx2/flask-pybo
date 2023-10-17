@@ -1,0 +1,156 @@
+<!--<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">-->
+{% extends 'base.html' %}   <!--base.html 상속 받음.-->
+{% block content %}
+
+<div class="container my-3">
+    <!--3-14 검색 창-->
+    <div class="row my-3">
+        <div class="col-6">
+            <a href="{{ url_for('question.create') }}" class="btn btn-primary">질문 등록하기</a>
+        </div>
+        <div class="col-6">
+            <div class="input-group">
+                <input type="text" id="search_kw" class="form-control" value="{{ kw or '' }}">
+                <!--자바 스크립트에서 이 텍스트창에 입력된 값을 읽기 위해 id(search_kw) 속성을 추가함.-->
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="btn_search">찾기</button>
+                </div>
+            </div>
+        </div><!--end col-->
+    </div><!--end row-->
+
+    <table class="table">
+        <thead>
+        <tr class="table-dark">
+            <th>번호</th>
+            <th style="width:50%">제목</th>
+            <th>글쓴이</th>
+            <th>작성일시</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- 질문 목록 -->
+        {% if question_list %}
+        <!--render_template 함수에서 전달받은 질문 목록 데이터 question_list가 있는지 검사-->
+        {% for question in question_list.items %}
+        <!--question_list에 저장된 데이터를 하나씩 꺼내 question 객체에 대입한다. (파이썬의 for~in 문과 유사)-->
+        <!--Pageination객체는 현재 조회된 목록데이터를 가져오기 위해서는 items 함수를 호출해야 함.-->
+
+        <!--<li><a href="/detail/{{ question.id }}/">{{ question.subject }}</a></li>-->
+            <!--바로 앞의 for 문에서 얻은 question 객체의 id를 출력. (question 객체의 subject를 출력)-->
+        <tr class="text-center">
+            <td>{{ question_list.total - ((question_list.page-1) * question_list.per_page) - loop.index0 }}</td>
+            <!--게시물 번호 공식을 질문 목록 템플릿에 적용.
+                total : 전체 게시물 개수, page : 현재 페이지, per_page : 페이지당 게시물 개수, loop.index0 : 나열 인덱스(0부터 시작) -->
+            <td class="text-start">
+                <a href="{{ url_for('question.detail', question_id=question.id) }}">{{ question.subject }}</a>
+                <!--기존에는 상세 페이지로 연결하는 링크가 /detail/{{ question.id }}/처럼 하드 코딩되어 있었음.
+                    이 부분을 url_for 함수를 이용해 question.detail 라우팅 함수로 URL을 찾도록 변경함.
+                    이때 question.detail 함수는 question_id 매개변수가 필요하므로 question_id를 전달해야 함.-->
+
+                <!-- 질문에 달린 답변 개수 표시하기 -->
+                {% if question.answer_set|length > 0 %}
+                <!--답변이 있는 경우를 검사-->
+                <span class="text-danger small mx-2">{{ question.answer_set|length }}</span>
+                <!--답변 개수를 표시-->
+                {% endif %}
+            </td>
+            <td>{{ question.user.username }}</td> <!--글쓴이 추가-->
+            <td>{{ question.create_date|datetime }}</td>
+            <!--파이프라인 문자와 함께 datetime 필터 적용. -> datetime필터가 적용되었으므로 format_datetime 필터 함수가 실행됨.
+                이때 format_datetime의 매개변수 value에 question.create_date가 전달된다.-->
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="3">질문이 없습니다.</td>
+        </tr>
+        {% endif %}
+        </tbody>
+    </table>
+
+   <!-- 페이징처리 시작 -->
+    <ul class="pagination justify-content-center">
+
+        <!-- 이전페이지 -->
+        {% if question_list.has_prev %}
+        <li class="page-item">
+            <!--3-14 페이징 -> 기존의 페이징 처리 방식(?page=1) 변경. 검색과 페이징이 동시에 처리되려면 form을 통해 페이징이 요청되어야 함.
+                                페이지 링크를 href 속성에 직접 입력하는 대신 data-page 속성으로 값을 읽을 수 있도록 변경.-->
+            <a class="page-link" data-page="{{ question_list.prev_num }}" href="javascript:void(0)">이전</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" tabindex="-1" aria-disabled="true" href="javascript:void(0)">이전</a>
+        </li>
+        {% endif %}
+
+        <!-- 페이지번호 -->
+        {% for page_num in question_list.iter_pages() %}
+        {% if page_num %}
+        {% if page_num != question_list.page %}
+        <li class="page-item">
+            <!--3-14 페이징 -> 기존의 페이징 처리 방식(?page=1) 변경. 검색과 페이징이 동시에 처리되려면 form을 통해 페이징이 요청되어야 함.
+                                페이지 링크를 href 속성에 직접 입력하는 대신 data-page 속성으로 값을 읽을 수 있도록 변경.-->
+            <a class="page-link" data-page="{{ page_num }}" href="javascript:void(0)">{{ page_num }}</a>
+        </li>
+        {% else %}
+        <li class="page-item active" aria-current="page">
+            <a class="page-link" href="javascript:void(0)">{{ page_num }}</a>
+        </li>
+        {% endif %}
+        {% else %}
+        <li class="disabled">
+            <a class="page-link" href="javascript:void(0)">...</a>
+            <!--iter_pages 함수로 페이지가 나열될 때 페이지 번호(page_num)가 없는 경우 '...'을 표시 함.
+                이는 보여 줄 페이지 번호가 지나치게 많은 경우 현재 페이지 위주로 보여주는 기술이다.-->
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        <!-- 다음페이지 -->
+        {% if question_list.has_next %}
+        <li class="page-item">
+            <!--3-14 페이징 -> 기존의 페이징 처리 방식(?page=1) 변경. 검색과 페이징이 동시에 처리되려면 form을 통해 페이징이 요청되어야 함.
+                                페이지 링크를 href 속성에 직접 입력하는 대신 data-page 속성으로 값을 읽을 수 있도록 변경.-->
+            <a class="page-link" data-page="{{ question_list.next_num }}" href="javascript:void(0)">다음</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" tabindex="-1" aria-disabled="true" href="javascript:void(0)">다음</a>
+        </li>
+        {% endif %}
+    </ul>
+    <!-- 페이징처리 끝 -->
+
+    <!--질문 등록 버튼 -> 검색창 좌측으로 이동 -->
+
+</div>
+<!--3-14 검색 폼 (page와 kw를 동시에 GET 방식으로 요청할 수 있는 form 엘리먼트 추가)-->
+<form id="searchForm" method="get" action="{{ url_for('question._list') }}">
+    <input type="hidden" id="kw" name="kw" value="{{ kw or '' }}">
+    <input type="hidden" id="page" name="page" value="{{ page }}">
+</form>
+{% endblock %}
+
+<!--3-14 검색 스크립트 (페이징과 검색을 요청하는 자바스크립트 코드 추가)-->
+{% block script %}
+<script type='text/javascript'>
+const page_elements = document.getElementsByClassName("page-link");
+Array.from(page_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        document.getElementById('page').value = this.dataset.page;
+        document.getElementById('searchForm').submit();
+    });
+});
+const btn_search = document.getElementById("btn_search");
+btn_search.addEventListener('click', function() {
+    document.getElementById('kw').value = document.getElementById('search_kw').value;
+    document.getElementById('page').value = 1;
+    document.getElementById('searchForm').submit();
+});
+</script>
+{% endblock %}
+
+<!--document.getElementById('page').value = 1;  // 검색버튼을 클릭할 경우 1페이지부터 조회한다.-->
+
